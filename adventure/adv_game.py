@@ -3,6 +3,33 @@
 This module provides a small, reusable `clues` list used by the adventure game.
 Each entry is a one-sentence hint about a past event and begins with "There is a...".
 """
+from enum import Enum
+from abc import ABC, abstractmethod
+
+
+class encounter_outcome(Enum):
+	CONTINUE = 1
+	END = 2
+
+# Preferred, PEP8-friendly name for use across the codebase.
+EncounterOutcome = encounter_outcome
+
+
+class Encounter(ABC):
+	"""Abstract base class for encounters.
+
+	Subclasses must implement `run_encounter` and return an `EncounterOutcome`.
+	"""
+
+	@abstractmethod
+	def run_encounter(self) -> EncounterOutcome:
+		"""Execute the encounter logic and return an EncounterOutcome.
+
+		Implementations should return either `EncounterOutcome.CONTINUE` or
+		`EncounterOutcome.END` to indicate how the game should proceed.
+		"""
+		raise NotImplementedError
+
 clues = [
 	"There is a smudge of dried ink on the underside of the table.",
 	"There is a faint scorch on the carpet as if something hot had been placed there.",
@@ -133,6 +160,30 @@ class SenseClueGenerator:
 		if clue and sense:
 			return f"{sense} {clue}"
 		return clue or sense or ""
+
+	def pull_random_item(self):
+		"""Compatibility proxy: return the same combined string as `get_senseclue`.
+
+		This method exists so callers that expect a `pull_random_item` method can
+		call it directly on the generator instance.
+		"""
+		return self.get_senseclue()
+
+
+
+class DefaultEncounter(Encounter):
+	"""Simple default encounter that prints a combined sense+clue and continues."""
+
+	def __init__(self):
+		# instantiate the singleton SenseClueGenerator
+		self.scg = SenseClueGenerator()
+
+	def run_encounter(self) -> EncounterOutcome:
+		# pull a combined sensory+clue string and print it
+		out = self.scg.pull_random_item()
+		print(out)
+		return EncounterOutcome.CONTINUE
+
 
 
 
