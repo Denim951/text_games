@@ -186,6 +186,110 @@ class DefaultEncounter(Encounter):
 
 
 
+class TreasureEncounter(Encounter):
+    """An encounter that awards the player the treasure and ends the game."""
+
+    def run_encounter(self) -> EncounterOutcome:
+        print("As you enter, a chest gleams in the torchlight — you've found the treasure!")
+        print("Congratulations, you have won the game.")
+        return EncounterOutcome.END
+
+
+
+class RedWizard(Encounter):
+	"""A spell battle with the Red Wizard using fantasy-themed spells."""
+
+	game_rules = {
+		"Fireball": ["Ice Shard", "Lightning Bolt"],
+		"Ice Shard": ["Wind Gust", "Earthquake"],
+		"Wind Gust": ["Lightning Bolt", "Fireball"],
+		"Lightning Bolt": ["Earthquake", "Ice Shard"],
+		"Earthquake": ["Fireball", "Wind Gust"],
+	}
+
+	choices = list(game_rules.keys())
+
+	def run_encounter(self) -> EncounterOutcome:
+		print("A Red Wizard blocks your path and challenges you to a spell battle!")
+		print("Cast the correct spell to vanquish the wizard; if he wins, you are banished from this castle.")
+
+		while True:
+			print("\nChoose a spell:")
+			for i, c in enumerate(self.choices, 1):
+				print(f"  {i}. {c}")
+			choice = input("Enter number (1-5): ").strip()
+			try:
+				idx = int(choice) - 1
+				if idx < 0 or idx >= len(self.choices):
+					raise ValueError
+			except ValueError:
+				print("Invalid selection. Try again.")
+				continue
+
+			player = self.choices[idx]
+			wizard = random.choice(self.choices)
+			print(f"You cast {player}. The Red Wizard casts {wizard}.")
+
+			if player == wizard:
+				print("The spells clash evenly — the duel continues.")
+				continue
+
+			# player wins if wizard choice is in player's beaten list
+			if wizard in self.game_rules[player]:
+				print("Your spell overwhelms the Red Wizard — he is vanquished from this castle!")
+				return EncounterOutcome.CONTINUE
+			else:
+				print("The Red Wizard's spell overpowers you — you are banished from this castle.")
+				return EncounterOutcome.END
+
+
+
+class BlueWizard(Encounter):
+	"""An arcane duel using fantasy-themed spells."""
+
+	game_rules = {
+		"ember wave": ["frost shard"],   # fire melts ice
+		"frost shard": ["storm lash"],   # ice stills wind
+		"storm lash": ["ember wave"],    # wind scatters fire
+	}
+
+	choices = list(game_rules.keys())
+
+	def run_encounter(self) -> EncounterOutcome:
+		print("A Blue Wizard steps forward and challenges you to an arcane duel!")
+		print("Win to send the wizard away; lose and be banished from the castle.")
+
+		while True:
+			print("\nChoose your spell:")
+			for i, c in enumerate(self.choices, 1):
+				print(f"  {i}. {c.title()}")
+			choice = input("Enter number (1-3): ").strip()
+			try:
+				idx = int(choice) - 1
+				if idx < 0 or idx >= len(self.choices):
+					raise ValueError
+			except ValueError:
+				print("Invalid selection. Try again.")
+				continue
+
+			player = self.choices[idx]
+			wizard = random.choice(self.choices)
+			print(f"You cast {player.title()}. The Blue Wizard casts {wizard.title()}.")
+
+			if player == wizard:
+				print("It's a draw — the duel continues.")
+				continue
+
+			if wizard in self.game_rules[player]:
+				print("Your spell overcomes the Blue Wizard — he is vanquished from this castle!")
+				return EncounterOutcome.CONTINUE
+			else:
+				print("The Blue Wizard's spell overwhelms you — you are banished from this castle.")
+				return EncounterOutcome.END
+
+
+
+
 class Room:
 	"""A room containing a name and an Encounter.
 
@@ -211,6 +315,14 @@ castle_rooms = [
 	Room("Throne Room", DefaultEncounter()),
 ]
 
+# add a Treasure Room with a Treasure Encounter to the rooms list
+castle_rooms.append(Room("Treasure Room", TreasureEncounter()))
+
+# create a room called “The Red Wizard’s Lair” with the Red Wizard Encounter and add it to the rooms list
+castle_rooms.append(Room("The Red Wizard's Lair", RedWizard()))
+
+# create a room called “The Blue Wizard’s Lair” with the Blue Wizard Encounter and add it to the rooms list
+castle_rooms.append(Room("The Blue Wizard's Lair", BlueWizard()))
 
 class Castle:
 	"""Manage room selection and navigation for the castle.
