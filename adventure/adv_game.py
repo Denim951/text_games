@@ -186,4 +186,115 @@ class DefaultEncounter(Encounter):
 
 
 
+class Room:
+	"""A room containing a name and an Encounter.
+
+	visit_room() executes the room's encounter and returns its EncounterOutcome.
+	"""
+
+	def __init__(self, name: str, encounter: Encounter):
+		self.name = name
+		self.encounter = encounter
+
+	def visit_room(self) -> EncounterOutcome:
+		"""Run the room's encounter and return its result."""
+		return self.encounter.run_encounter()
+
+
+# Prebuilt castle rooms using the DefaultEncounter
+castle_rooms = [
+	Room("Great Hall", DefaultEncounter()),
+	Room("Armory", DefaultEncounter()),
+	Room("North Tower", DefaultEncounter()),
+	Room("Library", DefaultEncounter()),
+	Room("Courtyard", DefaultEncounter()),
+	Room("Throne Room", DefaultEncounter()),
+]
+
+
+class Castle:
+	"""Manage room selection and navigation for the castle.
+
+	- room_selector: RandomItemSelector initialized with the `castle_rooms` list
+	"""
+
+	def __init__(self, rooms=None):
+		# default to the prebuilt castle_rooms if none provided
+		rooms = rooms if rooms is not None else castle_rooms
+		self.room_selector = RandomItemSelector(rooms)
+
+	def select_door(self) -> int:
+		"""Randomly determine number of doors (2-4), prompt the user to choose one.
+
+		Returns the door number chosen (1-based).
+		"""
+		num_doors = random.randint(2, 4)
+		print(f"\nYou approach a corridor with {num_doors} closed doors.")
+		prompt = f"Select a door (1-{num_doors}): "
+		while True:
+			choice = input(prompt).strip()
+			try:
+				val = int(choice)
+				if 1 <= val <= num_doors:
+					print(f"You open door {val}...\n")
+					return val
+			except ValueError:
+				pass
+			print(f"Invalid selection. Enter a number between 1 and {num_doors}.")
+
+	def next_room(self) -> EncounterOutcome:
+		"""Select a door, pick a random room, announce it, visit it, and return outcome."""
+		self.select_door()
+		room = self.room_selector.pull_random_item()
+		if room is None:
+			print("No rooms available.")
+			return EncounterOutcome.END
+
+		print(f"You find yourself in the {room.name}.")
+		return room.visit_room()
+
+	def reset(self):
+		"""Reset the room selector so all rooms become available again."""
+		self.room_selector.reset()
+		print("Castle rooms have been reset.")
+
+
+
+class Game:
+	"""High-level game manager that runs a play loop over a Castle instance."""
+
+	def __init__(self, rooms=None):
+		# rooms is expected to be a sequence (list/set) of Room objects
+		self.castle = Castle(rooms=rooms)
+
+	def play_game(self):
+		"""Main game loop.
+
+		Explains the objective, then repeatedly visits rooms until an END outcome.
+		After game over, prompts the user to explore a different castle.
+		"""
+		print("Welcome to the castle exploration game!")
+		print("Objective: Navigate the castle rooms and search for the treasure.\n")
+
+		while True:
+			outcome = self.castle.next_room()
+			if outcome == EncounterOutcome.END:
+				self.castle.reset()
+				print("Game Over")
+				again = input("Would you like to explore a different castle? (y/n): ").strip().lower()
+				if again.startswith("y"):
+					print("Starting a new exploration...\n")
+					continue
+				else:
+					print("Thanks for playing!")
+					break
+			# otherwise continue exploring
+
+# run the game
+if __name__ == "__main__":
+	game = Game()
+	game.play_game()
+
+
+
 
